@@ -1,0 +1,120 @@
+https://twitter.com/DeeCeeGee89/status/431681449272819712
+db.uk_text.mapReduce(map,reduce, { out : "uk_tfvalues" } )
+
+User Actions
+ Follow
+
+D.C.G
+‏@DeeCeeGee89
+I would love a go at Luge... Or Ski Jump. Looks awesome.
+#Sochi2014
+ Reply  Retweet  Favorite   More
+11:50 PM - 6 Feb 2014
+
+{u'contributors': None, u'truncated': False, u'text': u'I would love a go at Luge... Or Ski Jump. Looks awesome.  \n#Sochi2014', u'in_reply_to_status_id': None, u'id': 431681449272819712L, u'favorite_count': 0, u'source': u'<a href="http://twitter.com/download/iphone" rel="nofollow">Twitter for iPhone</a>', u'retweeted': False, u'coordinates': None, u'entities': {u'symbols': [], u'user_mentions': [], u'hashtags': [{u'indices': [59, 69], u'text': u'Sochi2014'}], u'urls': []}, u'in_reply_to_screen_name': None, u'id_str': u'431681449272819712', u'retweet_count': 0, u'in_reply_to_user_id': None, u'favorited': False, u'user': {u'follow_request_sent': False, u'profile_use_background_image': True, u'id': 137252812, u'verified': False, u'entities': {u'description': {u'urls': []}}, u'profile_image_url_https': u'https://pbs.twimg.com/profile_images/416246284975341570/G3ohbslH_normal.jpeg', u'profile_sidebar_fill_color': u'E5507E', u'is_translator': False, u'profile_text_color': u'362720', u'followers_count': 182, u'protected': False, u'location': u'Yorkshire, England', u'default_profile_image': False, u'id_str': u'137252812', u'is_translation_enabled': False, u'utc_offset': 0, u'statuses_count': 15746, u'description': u"Newcastle United fan... The biggest English Tampa Bay Rays fan in history... Huge Cricket and NFL fan... T'Yorkshireman.", u'friends_count': 78, u'profile_background_image_url_https': u'https://abs.twimg.com/images/themes/theme11/bg.gif', u'profile_link_color': u'B40B43', u'profile_image_url': u'http://pbs.twimg.com/profile_images/416246284975341570/G3ohbslH_normal.jpeg', u'notifications': False, u'geo_enabled': False, u'profile_background_color': u'FF6699', u'profile_banner_url': u'https://pbs.twimg.com/profile_banners/137252812/1391640785', u'profile_background_image_url': u'http://abs.twimg.com/images/themes/theme11/bg.gif', u'screen_name': u'DeeCeeGee89', u'lang': u'en', u'profile_background_tile': True, u'favourites_count': 315, u'name': u'D.C.G', u'url': None, u'created_at': u'Mon Apr 26 07:18:22 +0000 2010', u'contributors_enabled': False, u'time_zone': u'London', u'profile_sidebar_border_color': u'CC3366', u'default_profile': False, u'following': False, u'listed_count': 5}, u'geo': None, u'in_reply_to_user_id_str': None, u'lang': u'en', u'created_at': u'Fri Feb 07 06:50:52 +0000 2014', u'in_reply_to_status_id_str': None, u'place': None, u'_id': ObjectId('52f4af8789dac69d4d0ff7d1')}
+
+========================================
+
+  long elapsedTime = 0;
+        try {
+            // Stopwatch
+            long startTime = System.currentTimeMillis();
+            System.out.println("Starttime:" + startTime);
+            //Initialize Terms
+            TermEnum termEnum = indexReader.terms();
+
+            //Initialize dictionary to store TF, IDF and TF*IDF weight
+            HashMap<Integer,HashMap<String,Double>> hm_tfidf_docvsm = new HashMap<Integer, HashMap<String, Double>>();
+
+            //Construct key for all Hashmaps
+            for(int docid = 0;docid < indexReader.maxDoc(); docid++)
+            {
+                HashMap<String,Double> lhmap_idfvector = new HashMap<String, Double>();
+                hm_tfidf_docvsm.put(docid,lhmap_idfvector);
+            }
+
+            while (termEnum.next())
+            {
+                Term term = new Term("contents", termEnum.term().text());
+                TermDocs tdocs = indexReader.termDocs(term);
+                while (tdocs.next())
+                {
+                    if(hm_tfidf_docvsm.containsKey(tdocs.doc()))
+                    {
+                        HashMap<String,Double> lhmap_tfidf = hm_tfidf_docvsm.get(tdocs.doc());
+
+                        //TF-IDF Storage
+                        double maxdoc = indexReader.maxDoc();
+                        double docfreq = indexReader.docFreq(term);
+                        double termfreq = tdocs.freq();
+                        double tfidfvalue = ( (termfreq) *  ( Math.log( maxdoc / docfreq) ) );
+                        lhmap_tfidf.put(termEnum.term().text(), tfidfvalue);
+                        hm_tfidf_docvsm.put(tdocs.doc(),lhmap_tfidf);
+                    }
+                }
+            }
+            long stopTime = System.currentTimeMillis();
+            elapsedTime = stopTime - startTime;
+            System.out.println("TimeTaken ConstructTFIDFVSM:" + elapsedTime);
+            FileOps.SaveObject(hm_tfidf_docvsm,"TFIDFVSM2013.dat");
+        }
+        catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+
+
+
+
+
+
+=================================
+
+
+
+var map = function() {
+    var summary = this.summary;
+    if (summary) {
+               emit(summary, 1);
+            }
+};
+
+var map = function() {
+    var summary = this.summary;
+    if (summary) {
+        // quick lowercase to normalize per your requirements
+        summary = summary.toLowerCase().split(" ");
+        for (var i = summary.length - 1; i >= 0; i--) {
+            // might want to remove punctuation, etc. here
+            if (summary[i])  {      // make sure there's something
+               emit(summary[i], 1); // store a 1 for each word
+            }
+        }
+    }
+};
+Then, in the reduce function, it sums all of the results found by the map function and returns a discrete total for each word that was emitted above.
+
+var reduce = function( key, values ) {
+    var count = 0;
+    values.forEach(function(v) {
+        count +=v;
+    });
+    return count;
+}
+Finally, execute the mapReduce:
+
+> db.so.mapReduce(map, reduce, {out: "word_count"})
+The results with your sample data:
+
+> db.word_count.find().sort({value:-1})
+{ "_id" : "is", "value" : 3 }
+{ "_id" : "bad", "value" : 2 }
+{ "_id" : "good", "value" : 2 }
+{ "_id" : "this", "value" : 2 }
+{ "_id" : "neither", "value" : 1 }
+{ "_id" : "or", "value" : 1 }
+{ "_id" : "something", "value" : 1 }
+{ "_id" : "that", "value" : 1 }
+
+
+
